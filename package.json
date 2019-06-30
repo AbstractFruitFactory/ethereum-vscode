@@ -1,0 +1,95 @@
+{
+	"name": "ethdev",
+	"displayName": "ethdev",
+	"description": "",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.35.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onView:tools"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "ethereum-dev",
+					"title": "Ethereum Dev",
+					"icon": "media/dep.svg"
+				}
+			]
+		},
+		"views": {
+			"ethereum-dev": [
+				{
+					"id": "tools",
+					"name": "Tools"
+				},
+				{
+					"id": "contract-explorer",
+					"name": "Contract Explorer"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "tools.Web3",
+				"title": "Web3"
+			},
+			{
+				"command": "contract-explorer.compileAll",
+				"title": "Compile All",
+				"icon": {
+					"light": "media/dep.svg",
+					"dark": "media/dep.svg"
+				}
+			},
+			{
+				"command": "contract-explorer.deploy",
+				"title": "Deploy",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "contract-explorer.compileAll",
+					"when": "view == contract-explorer",
+					"group": "navigation"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "contract-explorer.deploy",
+					"when": "view == contract-explorer && viewItem == contract",
+					"group": "inline"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"test": "npm run compile && node ./node_modules/vscode/bin/test"
+	},
+	"devDependencies": {
+		"typescript": "^3.3.1",
+		"vscode": "^1.1.28",
+		"tslint": "^5.12.1",
+		"@types/node": "^10.12.21",
+		"@types/mocha": "^2.2.42"
+	},
+	"dependencies": {
+		"solc": "^0.5.9",
+		"web3": "1.0.0-beta.55"
+	}
+}
