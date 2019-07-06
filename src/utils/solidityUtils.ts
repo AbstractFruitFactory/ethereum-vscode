@@ -7,6 +7,7 @@ var fs = require('fs')
 var solc = require('solc')
 
 var web3: Web3
+let contractData: CompiledContract[] = []
 let accounts: string[]
 
 export function compileSolidity(filePath: string): CompiledContract[] | undefined {
@@ -18,10 +19,10 @@ export function compileSolidity(filePath: string): CompiledContract[] | undefine
     if (output.errors) {
         throw new Error(JSON.stringify(output.errors))
     } else {
-        let contractData = []
         const contracts = output.contracts[fileName]
         for (let contractName in contracts) {
             contractData.push({
+                filePath: filePath,
                 abi: contracts[contractName].abi,
                 bytecode: contracts[contractName].evm.bytecode.object
             })
@@ -44,6 +45,11 @@ export async function connectToBlockchain(blockchain_address: string) {
     web3 = new Web3Class(blockchain_address)
     accounts = await web3.eth.getAccounts()
 }
+
+export function getCompiledFiles(): CompiledContract[] {
+    return contractData
+}
+
 
 function generateSolidityCompilerInput(filename: string, filecontent: string) {
     return {
