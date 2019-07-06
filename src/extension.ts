@@ -9,7 +9,8 @@ import { ToolsProvider } from './views/Tools'
 import { ContractExplorer, ContractItem } from './views/ContractExplorer'
 import { CompiledContract } from "./types/CompiledContract";
 
-var web3: Web3 
+var web3: Web3
+let accounts: string[]
 
 export function activate(context: vscode.ExtensionContext) {
 	const toolsProvider = new ToolsProvider()
@@ -28,43 +29,53 @@ function connectToBlockchain() {
 	vscode.window.showInputBox({
 		value: 'http://127.0.0.1:8545',
 		placeHolder: 'Enter blockchain endpoint...'
-	}).then((blockchain_address: string | undefined) => {
+	}).then(async blockchain_address => {
 		if (blockchain_address) {
-			console.log(blockchain_address)
-			web3 = new Web3Class(new Web3Class.providers.HttpProvider(blockchain_address))
-			console.log(web3.eth.accounts.wallet)
-			vscode.window.showInformationMessage(`Connected to blockchain on ${blockchain_address}!`)
+			try {
+				web3 = new Web3Class(blockchain_address)
+				accounts = await web3.eth.getAccounts()
+				vscode.window.showInformationMessage(`Connected to blockchain on ${blockchain_address}!`)
+			} catch (e) {
+				vscode.window.showInformationMessage(`Failed to connect. ${e.message}`)
+			}
 		}
 	})
 }
 
-function deployContract(contract: ContractItem) {
-	const compiledContract: CompiledContract | undefined = compileSolidity(contract.path)
-	if(compiledContract) {
-		let contract
+async function deployContract(contract: ContractItem) {
+	const compiledContracts: CompiledContract[] | undefined = compileSolidity(contract.path)
+	if (compiledContracts) {
 		try {
-			contract = new web3.eth.Contract(compiledContract.abi)
-			contract.deploy({ data: compiledContract.bytecode }).send({ from: web3.eth.accounts.wallet[0].address })
+			for (let contract of compiledContracts) {
+				const contractInstance = new web3.eth.Contract(contract.abi)
+				const receipt = await contractInstance.deploy({ data: contract.bytecode, arguments: [] }).send({ from: accounts[0] })
+				vscode.window.showInformationMessage(`Contract successfully deployed at ${receipt.address}!`)
+			}
 		} catch (e) {
-			console.log(e.message)
+			vscode.window.showInformationMessage(`Failed to deploy contract. ${e.message}!`)
 		}
 	}
-	
+
 }
 
-// Make this support several contracts in one solidity file
-function compileSolidity(filePath: string): CompiledContract | undefined {
+function compileSolidity(filePath: string): CompiledContract[] | undefined {
 	const filecontent: string = fs.readFileSync(filePath, 'utf8')
 	const fileName: string = path.basename(filePath)
 	const input = generateSolidityCompilerInput(path.basename(filePath), filecontent)
 	const output = JSON.parse(solc.compile(JSON.stringify(input)))
+
 	if (output.errors) {
 		vscode.window.showErrorMessage(JSON.stringify(output.errors))
 	} else {
-		return {
-			abi: output.contracts[fileName].Test.abi,
-			bytecode: output.contracts[fileName].Test.evm.bytecode.object
+		let contractData = []
+		const contracts = output.contracts[fileName]
+		for (let contractName in contracts) {
+			contractData.push({
+				abi: contracts[contractName].abi,
+				bytecode: contracts[contractName].evm.bytecode.object
+			})
 		}
+		return contractData
 	}
 }
 
