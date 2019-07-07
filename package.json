@@ -30,8 +30,12 @@
 					"name": "Tools"
 				},
 				{
-					"id": "contract-explorer",
-					"name": "Contract Explorer"
+					"id": "solidity-files",
+					"name": "Solidity Files"
+				},
+				{
+					"id": "smart-contracts",
+					"name": "Smart Contracts"
 				}
 			]
 		},
@@ -41,7 +45,7 @@
 				"title": "Web3"
 			},
 			{
-				"command": "contract-explorer.compileAll",
+				"command": "solidity-files.compileAll",
 				"title": "Compile All",
 				"icon": {
 					"light": "media/dep.svg",
@@ -49,7 +53,7 @@
 				}
 			},
 			{
-				"command": "contract-explorer.deploy",
+				"command": "solidity-files.deploy",
 				"title": "Deploy",
 				"icon": {
 					"light": "resources/light/refresh.svg",
@@ -60,15 +64,15 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "contract-explorer.compileAll",
-					"when": "view == contract-explorer",
+					"command": "solidity-files.compileAll",
+					"when": "view == solidity-files",
 					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "contract-explorer.deploy",
-					"when": "view == contract-explorer && viewItem == contract",
+					"command": "solidity-files.deploy",
+					"when": "view == solidity-files && viewItem == contract",
 					"group": "inline"
 				}
 			]

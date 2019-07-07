@@ -1,5 +1,5 @@
 import { CompiledContract } from "../types/CompiledContract"
-import { ContractItem } from '../views/ContractExplorer'
+import { SolidityFile } from '../views/SolidityFiles'
 import Web3 from "web3"
 const Web3Class = require('web3')
 var path = require('path')
@@ -31,7 +31,7 @@ export function compileSolidity(filePath: string): CompiledContract[] | undefine
     }
 }
 
-export async function deployContract(contract: ContractItem) {
+export async function deployContract(contract: SolidityFile) {
     const compiledContracts: CompiledContract[] | undefined = compileSolidity(contract.path)
     if (compiledContracts) {
         for (let contract of compiledContracts) {

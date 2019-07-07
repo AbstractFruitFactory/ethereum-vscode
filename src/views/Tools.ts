@@ -1,4 +1,5 @@
-import * as vscode from 'vscode';
+import * as vscode from 'vscode'
+import { Commands } from "../types/ExtensionTypes";
 
 export class ToolsProvider implements vscode.TreeDataProvider<Web3Item> {
 
@@ -11,7 +12,7 @@ export class ToolsProvider implements vscode.TreeDataProvider<Web3Item> {
 
 	public async getChildren() {
 		return [new Web3Item('Connect', vscode.TreeItemCollapsibleState.None, {
-			command: 'extension.InputRPCEndpoint',
+			command: Commands.InputRPCEndpoint,
 			title: ''
 		})]
 	}
