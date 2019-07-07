@@ -1,14 +1,14 @@
 'use strict'
 import * as vscode from 'vscode';
 import { ToolsProvider } from './views/Tools'
-import { ContractExplorerProvider, SolidityFileExplorer } from './views/SolidityFiles'
 import { connectToBlockchain } from './utils/solidityUtils'
 import { Commands } from "./types/ExtensionTypes";
+import "./views/SmartContracts"
+import "./views/SolidityFiles";
 
 
 export function activate(context: vscode.ExtensionContext) {
 	const toolsProvider = new ToolsProvider()
-	new SolidityFileExplorer()
 	vscode.window.registerTreeDataProvider('tools', toolsProvider)
 	vscode.commands.registerCommand(Commands.InputRPCEndpoint, () => {
 		vscode.window.showInputBox({

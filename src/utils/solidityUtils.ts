@@ -22,7 +22,7 @@ export function compileSolidity(filePath: string): CompiledContract[] | undefine
         const contracts = output.contracts[fileName]
         for (let contractName in contracts) {
             contractData.push({
-                filePath: filePath,
+                name: contractName,
                 abi: contracts[contractName].abi,
                 bytecode: contracts[contractName].evm.bytecode.object
             })

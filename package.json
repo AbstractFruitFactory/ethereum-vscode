@@ -72,7 +72,7 @@
 			"view/item/context": [
 				{
 					"command": "solidity-files.deploy",
-					"when": "view == solidity-files && viewItem == contract",
+					"when": "view == solidity-files && viewItem == file",
 					"group": "inline"
 				}
 			]

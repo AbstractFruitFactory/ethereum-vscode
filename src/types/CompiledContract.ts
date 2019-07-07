@@ -1,5 +1,5 @@
 export interface CompiledContract {
-    filePath?: string,
+    name: string,
     abi: Array<any>,
     bytecode: string
 }

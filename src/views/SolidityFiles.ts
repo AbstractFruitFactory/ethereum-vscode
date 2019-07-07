@@ -1,116 +1,46 @@
 import * as vscode from 'vscode'
-import { compileSolidity, deployContract, getCompiledFiles } from "../utils/solidityUtils";
-import { CompiledContract } from '../types/CompiledContract';
+import { compileSolidity } from "../utils/solidityUtils";
+import { refreshContractsView } from "./SmartContracts";
 import { Commands, Views } from "../types/ExtensionTypes";
 var fs = require('fs')
 var path = require('path')
 
-export class ContractExplorerProvider implements vscode.TreeDataProvider<SolidityFile | ContractDataItem> {
+export class SolidityFilesProvider implements vscode.TreeDataProvider<SolidityFile> {
 	public contractFiles: string[] = []
 
-	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
-	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event
-
-
 	constructor() {
-	}
-
-	public refresh(): any {
-		this._onDidChangeTreeData.fire();
 	}
 
 	getTreeItem(element: SolidityFile): vscode.TreeItem {
 		return element
 	}
 
-	public async getChildren(element?: SolidityFile): Promise<SolidityFile[] | ContractDataItem[]> {
-		if (element && element.contractData) {
-			return [
-				new ContractDataItem('ABI', element.contractData.abi),
-				new ContractDataItem('bytecode', element.contractData.bytecode)
-			]
-		}
-
+	public async getChildren(): Promise<SolidityFile[]> {
 		let files: string[] = findAllSolidityFiles()
 		this.contractFiles = files
 		let contractItems: SolidityFile[] = []
-		const compiledFiles = getCompiledFiles()
-
 		files.forEach(file => {
-			let isCompiled: boolean = false
-			for (let compiledFile of compiledFiles) {
-				if (compiledFile.filePath === file) {
-					contractItems.push(new SolidityFile(path.basename(file), file, vscode.TreeItemCollapsibleState.Collapsed, compiledFile))
-					isCompiled = true
-				}
-			}
-			if (!isCompiled) {
-				contractItems.push(new SolidityFile(path.basename(file), file, vscode.TreeItemCollapsibleState.None))
-			}
+			contractItems.push(new SolidityFile(path.basename(file), file, vscode.TreeItemCollapsibleState.None))
 		})
+
 		return contractItems
 	}
 }
 
 export class SolidityFile extends vscode.TreeItem {
-	contextValue = 'contract'
+	contextValue = 'file'
 
 	constructor(
 		public readonly label: string,
 		public readonly path: string,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-		public readonly contractData?: CompiledContract,
 		public readonly command?: vscode.Command
 	) {
 		super(label, collapsibleState)
 	}
 }
 
-export class ContractDataItem extends vscode.TreeItem {
-	contextValue = 'contractData'
 
-	constructor(
-		public readonly label: string,
-		public readonly data: any,
-		public readonly command?: vscode.Command
-	) {
-		super(label)
-	}
-}
-
-export class SolidityFileExplorer {
-
-	private solFileTreeView: vscode.TreeView<SolidityFile | ContractDataItem>
-
-	constructor() {
-		const treeDataProvider = new ContractExplorerProvider();
-		this.solFileTreeView = vscode.window.createTreeView<SolidityFile | ContractDataItem>(Views.SolidityFiles, { treeDataProvider });
-
-		vscode.commands.registerCommand(Commands.CompileAll, () => {
-			const files: string[] = treeDataProvider.contractFiles
-			for (let file of files) {
-				compileSolidity(file)
-				treeDataProvider.refresh()
-			}
-		})
-		vscode.commands.registerCommand(Commands.Deploy, async (contract: SolidityFile) => {
-			try {
-				await deployContract(contract)
-			} catch (e) {
-				vscode.window.showInformationMessage(`Failed to deploy contract. ${e.message}!`)
-			}
-			vscode.window.showInformationMessage(`Contracts successfully deployed!`)
-		})
-	}
-
-	private addContractData() {
-
-	}
-
-	private openFile(file: vscode.Uri): void {
-		vscode.window.showTextDocument(file);
-	}
-}
 
 function findAllSolidityFiles(): string[] {
 	const rootPath = vscode.workspace.rootPath
@@ -134,3 +64,27 @@ function searchFiles(dir: string, pattern: RegExp = /\.*/, filelist: string[] = 
 	})
 	return filelist
 }
+
+let solFileTreeView: vscode.TreeView<SolidityFile>
+
+const treeDataProvider = new SolidityFilesProvider();
+solFileTreeView = vscode.window.createTreeView<SolidityFile>(Views.SolidityFiles, { treeDataProvider });
+
+vscode.commands.registerCommand(Commands.CompileAll, () => {
+	const files: string[] = treeDataProvider.contractFiles
+	for (let file of files) {
+		compileSolidity(file)
+	}
+	refreshContractsView()
+})
+
+/*
+vscode.commands.registerCommand(Commands.Deploy, async (contract: SolidityFile) => {
+	try {
+		await deployContract(contract)
+	} catch (e) {
+		vscode.window.showInformationMessage(`Failed to deploy contract. ${e.message}!`)
+	}
+	vscode.window.showInformationMessage(`Contracts successfully deployed!`)
+})
+*/
