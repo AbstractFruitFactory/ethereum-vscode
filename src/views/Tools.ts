@@ -1,5 +1,7 @@
 import * as vscode from 'vscode'
-import { Commands } from "../types/ExtensionTypes";
+import { Commands } from "../types/ExtensionTypes"
+
+
 
 export class ToolsProvider implements vscode.TreeDataProvider<Web3Item> {
 
@@ -10,15 +12,30 @@ export class ToolsProvider implements vscode.TreeDataProvider<Web3Item> {
 		return element;
 	}
 
-	public async getChildren() {
-		return [new Web3Item('Connect', vscode.TreeItemCollapsibleState.None, {
-			command: Commands.InputRPCEndpoint,
-			title: ''
-		})]
+	public async getChildren(element?: Web3Item): Promise<Web3Item[]>  {
+		if(element) {
+			switch (element.label) {
+				case 'Connect':
+					return []
+				case 'abi':
+					return [new Web3Item('decodeLog', vscode.TreeItemCollapsibleState.None, {
+						command: Commands.DecodeLog,
+						title: ''
+					})]
+			}
+		}
+
+		return [
+			new Web3Item('Connect', vscode.TreeItemCollapsibleState.None, {
+				command: Commands.InputRPCEndpoint,
+				title: ''
+			}),
+			new Web3Item('abi', vscode.TreeItemCollapsibleState.Collapsed)
+		]
 	}
 }
 
-export class Web3Item extends vscode.TreeItem {
+class Web3Item extends vscode.TreeItem {
 	constructor(
 		public readonly label: string,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
