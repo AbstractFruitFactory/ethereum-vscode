@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { compileSolidity } from "../utils/solidityUtils";
+import { compileSolidity } from "../utils/Web3Utils";
 import { refreshContractsView } from "./SmartContracts";
 import { Commands, Views } from "../types/ExtensionTypes";
 var fs = require('fs')
@@ -77,14 +77,3 @@ vscode.commands.registerCommand(Commands.CompileAll, () => {
 	}
 	refreshContractsView()
 })
-
-/*
-vscode.commands.registerCommand(Commands.Deploy, async (contract: SolidityFile) => {
-	try {
-		await deployContract(contract)
-	} catch (e) {
-		vscode.window.showInformationMessage(`Failed to deploy contract. ${e.message}!`)
-	}
-	vscode.window.showInformationMessage(`Contracts successfully deployed!`)
-})
-*/
