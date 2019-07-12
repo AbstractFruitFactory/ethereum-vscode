@@ -53,8 +53,16 @@
 				}
 			},
 			{
-				"command": "solidity-files.deploy",
+				"command": "smart-contracts.deploy",
 				"title": "Deploy",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			},
+			{
+				"command": "smart-contracts.sendTransaction",
+				"title": "SendTransaction",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
@@ -71,8 +79,13 @@
 			],
 			"view/item/context": [
 				{
-					"command": "solidity-files.deploy",
-					"when": "view == solidity-files && viewItem == file",
+					"command": "smart-contracts.deploy",
+					"when": "view == smart-contracts && viewItem == contract",
+					"group": "inline"
+				},
+				{
+					"command": "smart-contracts.sendTransaction",
+					"when": "view == smart-contracts && viewItem == contract",
 					"group": "inline"
 				}
 			]
@@ -95,6 +108,7 @@
 	"dependencies": {
 		"@types/web3": "^1.0.19",
 		"solc": "^0.5.9",
-		"web3": "^1.0.0-beta.35"
+		"web3": "^1.0.0-beta.35",
+		"web3-utils": "^1.0.0-beta.55"
 	}
 }
