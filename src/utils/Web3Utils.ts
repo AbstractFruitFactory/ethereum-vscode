@@ -1,7 +1,6 @@
 import { CompiledContract } from "../types/CompiledContract"
 import Web3 from "web3"
 import { Event, Function, types } from "../types/ABITypes"
-import * as utils from 'web3-utils'
 
 const Web3Class = require('web3')
 var path = require('path')
@@ -33,17 +32,29 @@ export function compileSolidity(filePath: string): CompiledContract[] | undefine
     }
 }
 
-export async function deployContract(contract: CompiledContract): Promise<string> {
+export function deployContract(contract: CompiledContract, callback: any) {
     const contractInstance = new web3.eth.Contract(contract.abi)
     contractInstance.deploy({ data: contract.bytecode, arguments: [] }).send({ from: accounts[0], gas: 1000000 })
-        .on('receipt', receipt => {
-            return receipt.contractAddress
+        .on('error', (error: Error) => {
+            console.log(error)
+        })
+        .on('transactionHash', (transactionHash: string) => {
+            callback(transactionHash)
         })
 }
 
 export async function connectToBlockchain(blockchain_address: string) {
-    web3 = new Web3Class(blockchain_address)
+    const options = {
+        defaultBlock: 'latest',
+        defaultGas: 1,
+        defaultGasPrice: 0,
+        transactionBlockTimeout: 50,
+        transactionConfirmationBlocks: 24,
+        transactionPollingTimeout: 480
+    }
+    web3 = new Web3Class(blockchain_address, null, options)
     accounts = await web3.eth.getAccounts()
+    web3.defaultAccount = accounts[0]
 }
 
 export function getCompiledFiles(): CompiledContract[] {
@@ -74,15 +85,35 @@ export function decodeEvent(event: Event, data: string) {
     return web3.eth.abi.decodeLog(event.inputs, data, [eventTopic])
 }
 
-export async function sendTransaction(contractData: CompiledContract, contractAddress: string, functionName: string, args?: any[]) {
+export async function sendTransaction(contractData: CompiledContract, contractAddress: string, functionName: string, args: any[] = []) {
     var contract = new web3.eth.Contract(contractData.abi, contractAddress, {
         data: contractData.bytecode,
         from: accounts[0],
         gasPrice: '10',
         gas: 100000
     })
-    await contract.methods[functionName]().send({ from: accounts[0] })
+
+    await contract.methods[functionName](...args).send({ from: accounts[0] })
 }
+
+
+export function getTransactionReceiptMined(txHash: string, interval: number = 300) {
+    const transactionReceiptAsync = function (resolve: any, reject: any) {
+        web3.eth.getTransactionReceipt(txHash, (error: Error, receipt: any) => {
+            if (error) {
+                reject(error);
+            } else if (receipt == null) {
+                setTimeout(
+                    () => transactionReceiptAsync(resolve, reject),
+                    interval);
+            } else {
+                resolve(receipt);
+            }
+        })
+    }
+    return new Promise(transactionReceiptAsync);
+}
+
 
 function generateSolidityCompilerInput(filename: string, filecontent: string) {
     return {

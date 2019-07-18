@@ -20,7 +20,7 @@ export enum types {
     event = 'event'
 }
 
-interface Parameter {
+export interface Parameter {
     name: string,
     type: string
 }

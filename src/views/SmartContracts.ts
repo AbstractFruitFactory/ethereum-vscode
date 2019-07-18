@@ -1,9 +1,10 @@
 import * as vscode from 'vscode'
-import { getCompiledFiles, deployContract, getFunctionData, sendTransaction } from "../utils/Web3Utils"
+import { getCompiledFiles, deployContract, getFunctionData, sendTransaction, getTransactionReceiptMined } from "../utils/Web3Utils"
 import { CompiledContract } from '../types/CompiledContract'
 import { Views, Commands } from "../types/ExtensionTypes"
+import { Parameter } from "../types/ABITypes";
 
-export class SmartContractsProvider implements vscode.TreeDataProvider<SmartContractItem | ContractDataItem> {
+export class SmartContractsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     public contractFiles: string[] = []
 
     private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
@@ -12,35 +13,74 @@ export class SmartContractsProvider implements vscode.TreeDataProvider<SmartCont
     constructor() {
     }
 
-    public refresh(): any {
-        this._onDidChangeTreeData.fire();
+    public refresh(element?: vscode.TreeItem): any {
+        this._onDidChangeTreeData.fire(element);
     }
 
     getTreeItem(element: SmartContractItem): vscode.TreeItem {
         return element
     }
 
-    public async getChildren(element?: SmartContractItem): Promise<SmartContractItem[] | ContractDataItem[]> {
+    public async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[]> {
+        let items: vscode.TreeItem[] = []
+
         if (element) {
-            return [
-                new ContractDataItem('ABI', element.contractData.abi),
-                new ContractDataItem('bytecode', element.contractData.bytecode)
-            ]
+            const elementType = element.constructor.name
+            switch (elementType) {
+                case 'SmartContractItem':
+                    items.push(new ContractDataItem('ABI', (element as SmartContractItem).contractData.abi))
+                    items.push(new ContractDataItem('bytecode', (element as SmartContractItem).contractData.bytecode))
+                    if ((element as SmartContractItem).deployedAddress) {
+                        items.push(new MethodsItem(element as SmartContractItem))
+                    }
+                    break
+                case 'MethodsItem':
+                    const functions = getFunctionData((element as MethodsItem).parent.contractData.abi)
+                    for (let func of functions) {
+                        items.push(new MethodItem(func.name, func.inputs, element as MethodsItem, vscode.TreeItemCollapsibleState.None))
+                    }
+                    break
+            }
+        } else {
+            const compiledFiles = getCompiledFiles()
+
+            for (let compiledFile of compiledFiles) {
+                items.push(new SmartContractItem(compiledFile.name, vscode.TreeItemCollapsibleState.Collapsed, compiledFile))
+            }
         }
 
-        let contractItems: SmartContractItem[] = []
-        const compiledFiles = getCompiledFiles()
+        return items
+    }
+}
 
-        for (let compiledFile of compiledFiles) {
-            contractItems.push(new SmartContractItem(compiledFile.name, vscode.TreeItemCollapsibleState.Collapsed, compiledFile))
-        }
-        return contractItems
+export class MethodsItem extends vscode.TreeItem {
+    contextValue = 'methods'
+
+    constructor(
+        public readonly parent: SmartContractItem,
+        public readonly command?: vscode.Command
+    ) {
+        super('Methods', vscode.TreeItemCollapsibleState.Collapsed)
+    }
+}
+
+export class MethodItem extends vscode.TreeItem {
+    contextValue = 'method'
+
+    constructor(
+        public readonly label: string,
+        public readonly params: Parameter[],
+        public readonly parent: MethodsItem,
+        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
+        public readonly command?: vscode.Command
+    ) {
+        super(label, collapsibleState)
     }
 }
 
 export class SmartContractItem extends vscode.TreeItem {
     contextValue = 'contract'
-    public deployedAddress: string = ""
+    deployedAddress: string = ""
 
     constructor(
         public readonly label: string,
@@ -68,60 +108,71 @@ function openFile(file: vscode.Uri): void {
     vscode.window.showTextDocument(file);
 }
 
-export function refreshContractsView() {
-    treeDataProvider.refresh()
+export function refreshContractsView(element?: vscode.TreeItem) {
+    treeDataProvider.refresh(element)
 }
 
-let contractsTreeView: vscode.TreeView<SmartContractItem | ContractDataItem>
+let contractsTreeView: vscode.TreeView<vscode.TreeItem>
 
 const treeDataProvider = new SmartContractsProvider();
-contractsTreeView = vscode.window.createTreeView<SmartContractItem | ContractDataItem>(Views.SmartContracts, { treeDataProvider });
+contractsTreeView = vscode.window.createTreeView(Views.SmartContracts, { treeDataProvider });
 
 vscode.commands.registerCommand(Commands.Deploy, async (contract: SmartContractItem) => {
     try {
-        await deployContract(contract.contractData)
+        vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Deploying smart contract...',
+            cancellable: false
+        }, async (progress, token) => {
+            progress.report({
+                increment: 0
+            })
+            return await new Promise((resolve, reject) => {
+                deployContract(contract.contractData, async (transactionHash: string) => {
+                    let receipt: any = await getTransactionReceiptMined(transactionHash)
+                    contract.deployedAddress = receipt.contractAddress
+                    refreshContractsView(contract)
+                    progress.report({
+                        increment: 100
+                    })
+                    resolve()
+                })
+            })
+        })
     } catch (e) {
         vscode.window.showInformationMessage(`Failed to deploy contract. ${e.message}!`)
     }
-    vscode.window.showInformationMessage(`Contracts successfully deployed!`)
+    vscode.window.showInformationMessage(`Contract successfully deployed!`)
 })
 
-vscode.commands.registerCommand(Commands.SendTransaction, async (contract: SmartContractItem) => {
+vscode.commands.registerCommand(Commands.SendTransaction, async (contract: MethodItem) => {
     try {
-        await showPickFunction(contract.contractData)
+        await showTransactionInput(contract)
     } catch (e) {
         vscode.window.showInformationMessage(`${e.message}`)
     }
 })
 
-async function showPickFunction(contractData: CompiledContract) {
-    const functions = getFunctionData(contractData.abi)
-    const functionNames = []
-
-    for(let func of functions) {
-        functionNames.push(func.name)
+async function showTransactionInput(contract: MethodItem) {
+    let placeHolder = ''
+    for (let param of contract.params) {
+        placeHolder += `${param.type}, `
     }
+    placeHolder = placeHolder.slice(0, -2)
 
-    const selectedFunc: string | undefined = await vscode.window.showQuickPick(functionNames, {
-        placeHolder: 'Choose a function to call'
+    const input: string | undefined = await vscode.window.showInputBox({
+        placeHolder
     })
 
-    if(!selectedFunc) {
-        return 
-    }
-
-    const contractAddress: string | undefined = await vscode.window.showInputBox({
-        placeHolder: 'Enter contract address'
-    })
-
-    if(!contractAddress) {
+    if (!input) {
         return
     }
 
-    const params: string | undefined = await vscode.window.showInputBox({
-        placeHolder: 'Enter input parameters'
-    })
+    let inputArray: string[] = input.split(',')
 
-
-    await sendTransaction(contractData, contractAddress, selectedFunc)
+    try {
+        await sendTransaction(contract.parent.parent.contractData, contract.parent.parent.deployedAddress, contract.label, inputArray)
+    } catch (error) {
+        vscode.window.showErrorMessage(error)
+    }
 }

@@ -85,7 +85,7 @@
 				},
 				{
 					"command": "smart-contracts.sendTransaction",
-					"when": "view == smart-contracts && viewItem == contract",
+					"when": "view == smart-contracts && viewItem == method",
 					"group": "inline"
 				}
 			]
@@ -107,8 +107,9 @@
 	},
 	"dependencies": {
 		"@types/web3": "^1.0.19",
+		"ethers": "^4.0.33",
 		"solc": "^0.5.9",
-		"web3": "^1.0.0-beta.35",
+		"web3": "^1.0.0-beta.46",
 		"web3-utils": "^1.0.0-beta.55"
 	}
 }
