@@ -34,6 +34,9 @@ export function compileSolidity(filePath: string): CompiledContract[] | undefine
 }
 
 export async function deployContract(contract: CompiledContract): Promise<string> {
+    if(!await isConnected()) {
+        throw new Error('Not connected to blockchain.')
+    }
     const contractInstance = new web3.eth.Contract(contract.abi)
     return new Promise((resolve, reject) => {
         contractInstance.deploy({ data: contract.bytecode, arguments: [] }).send({ from: accounts[0], gas: 1000000 })
@@ -108,9 +111,9 @@ export async function sendTransaction(contractData: CompiledContract, contractAd
 }
 
 
-export function getTransactionReceiptMined(txHash: string, interval: number = 300): Promise<TransactionReceipt> {
+export function waitForMined(transactionHash: string, interval: number = 300): Promise<TransactionReceipt> {
     const transactionReceiptAsync = function (resolve: any, reject: any) {
-        web3.eth.getTransactionReceipt(txHash, (error: Error, receipt) => {
+        web3.eth.getTransactionReceipt(transactionHash, (error: Error, receipt) => {
             if (error) {
                 reject(error);
             } else if (receipt == null) {

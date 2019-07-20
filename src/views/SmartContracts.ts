@@ -1,10 +1,9 @@
 import * as vscode from 'vscode'
-import { getCompiledFiles, deployContract, getFunctionData, sendTransaction, getTransactionReceiptMined } from "../utils/Web3Utils"
+import { getCompiledFiles, deployContract, getFunctionData, sendTransaction, waitForMined } from "../utils/Web3Utils"
 import { CompiledContract } from '../types/CompiledContract'
 import { Views, Commands } from "../types/ExtensionTypes"
 import { Parameter } from "../types/ABITypes"
 import { outputChannel } from '../extension'
-import { TransactionReceipt } from 'web3-core';
 
 export class SmartContractsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     public contractFiles: string[] = []
@@ -25,7 +24,6 @@ export class SmartContractsProvider implements vscode.TreeDataProvider<vscode.Tr
 
     public async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[]> {
         let items: vscode.TreeItem[] = []
-
         if (element) {
             const elementType = element.constructor.name
             switch (elementType) {
@@ -130,19 +128,25 @@ vscode.commands.registerCommand(Commands.Deploy, async (contract: SmartContractI
                 increment: 0
             })
 
-            const transactionHash: string = await deployContract(contract.contractData)
-            let receipt = await getTransactionReceiptMined(transactionHash)
+            let transactionHash: string
+            try {
+                transactionHash = await deployContract(contract.contractData)
+            } catch (error) {
+                vscode.window.showErrorMessage(error.message)
+                throw error
+            }
+            let receipt = await waitForMined(transactionHash)
             contract.deployedAddress = receipt.contractAddress as string
             refreshContractsView(contract)
             progress.report({
                 increment: 100
             })
+            vscode.window.showInformationMessage(`Contract successfully deployed!`)
             return transactionHash
         })
     } catch (e) {
         vscode.window.showInformationMessage(`Failed to deploy contract. ${e.message}!`)
     }
-    vscode.window.showInformationMessage(`Contract successfully deployed!`)
 })
 
 vscode.commands.registerCommand(Commands.SendTransaction, async (contract: MethodItem) => {
@@ -184,6 +188,6 @@ async function showSendTransactionInputBox(contract: MethodItem): Promise<string
 async function showTransactionResultOutput(transactionHash: string) {
     outputChannel.show()
     outputChannel.appendLine(`Transaction sent: ${transactionHash}`)
-    await getTransactionReceiptMined(transactionHash)
+    await waitForMined(transactionHash)
     outputChannel.appendLine(`... Transaction mined.`)
 }
