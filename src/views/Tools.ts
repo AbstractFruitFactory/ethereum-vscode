@@ -92,7 +92,9 @@ vscode.commands.registerCommand(Commands.DecodeLog, async () => {
 	const event: Event = eventNames[eventName]
 
 	const decodedEvent = decodeEvent(event, eventData)
-	console.log(decodedEvent)
+	outputChannel.show()
+	outputChannel.appendLine(JSON.stringify(decodedEvent, null, 2))
+	outputChannel.appendLine('')
 })
 
 vscode.commands.registerCommand(Commands.InputRPCEndpoint, () => {
