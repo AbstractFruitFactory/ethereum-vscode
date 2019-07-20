@@ -2,11 +2,10 @@ import * as vscode from 'vscode'
 import { Commands } from "../types/ExtensionTypes"
 import { CompiledContract } from '../types/CompiledContract';
 import { Event } from '../types/ABITypes';
-import { getCompiledFiles, getEventData, decodeEvent } from '../utils/Web3Utils';
+import { getCompiledFiles, getEventData, decodeEvent, connectToBlockchain, getTransactionReceipt } from '../utils/Web3Utils';
+import { outputChannel } from '../extension';
 
-
-
-export class ToolsProvider implements vscode.TreeDataProvider<Web3Item> {
+export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 
 	constructor() {
 	}
@@ -15,26 +14,29 @@ export class ToolsProvider implements vscode.TreeDataProvider<Web3Item> {
 		return element;
 	}
 
-	public async getChildren(element?: Web3Item): Promise<Web3Item[]>  {
-		if(element) {
+	public async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[]> {
+		let items: vscode.TreeItem[] = []
+
+		if (element) {
 			switch (element.label) {
-				case 'Connect':
-					return []
 				case 'abi':
-					return [new Web3Item('decodeLog', vscode.TreeItemCollapsibleState.None, {
+					items.push(new Web3Item('decodeLog', vscode.TreeItemCollapsibleState.None, {
 						command: Commands.DecodeLog,
 						title: ''
-					})]
+					}))
 			}
-		}
-
-		return [
-			new Web3Item('Connect', vscode.TreeItemCollapsibleState.None, {
+		} else {
+			items.push(new Web3Item('Connect', vscode.TreeItemCollapsibleState.None, {
 				command: Commands.InputRPCEndpoint,
 				title: ''
-			}),
-			new Web3Item('abi', vscode.TreeItemCollapsibleState.Collapsed)
-		]
+			}))
+			items.push(new Web3Item('abi', vscode.TreeItemCollapsibleState.Collapsed))
+			items.push(new Web3Item('getTransactionReceipt', vscode.TreeItemCollapsibleState.None, {
+				command: Commands.GetTransactionReceipt,
+				title: ''
+			}))
+		}
+		return items
 	}
 }
 
@@ -83,7 +85,7 @@ vscode.commands.registerCommand(Commands.DecodeLog, async () => {
 		placeHolder: 'Input event data...'
 	})
 
-	if(!eventData) {
+	if (!eventData) {
 		return
 	}
 
@@ -127,3 +129,18 @@ vscode.commands.registerCommand(Commands.InputRPCEndpoint, () => {
 	})
 })
 
+vscode.commands.registerCommand(Commands.GetTransactionReceipt, () => {
+	vscode.window.showInputBox({
+		placeHolder: 'Enter transaction hash...'
+	}).then(async transactionHash => {
+		if (transactionHash) {
+			try {
+				const receipt = await getTransactionReceipt(transactionHash)
+				outputChannel.show()
+				outputChannel.appendLine(`${receipt}`)
+			} catch (error) {
+				vscode.window.showErrorMessage(error.message)
+			}
+		}
+	})
+})

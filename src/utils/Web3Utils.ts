@@ -125,6 +125,10 @@ export function getTransactionReceiptMined(txHash: string, interval: number = 30
     return new Promise(transactionReceiptAsync);
 }
 
+export async function getTransactionReceipt(transactionHash: string): Promise<TransactionReceipt> {
+    return await web3.eth.getTransactionReceipt(transactionHash)
+}
+
 export async function isConnected(): Promise<boolean> {
     try {
         await web3.eth.getAccounts()

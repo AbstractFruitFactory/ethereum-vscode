@@ -9,5 +9,6 @@ export const Commands = {
     CompileAll: `${Views.SolidityFiles}.compileAll`,
     Deploy: `${Views.SmartContracts}.deploy`,
     DecodeLog: `${Views.Tools}.decodeLog`,
-    SendTransaction: `${Views.SmartContracts}.sendTransaction`
+    SendTransaction: `${Views.SmartContracts}.sendTransaction`,
+    GetTransactionReceipt: `${Views.Tools}.getTransactionReceipt`
 }
