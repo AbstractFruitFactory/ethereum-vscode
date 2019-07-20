@@ -141,7 +141,13 @@ vscode.commands.registerCommand(Commands.Deploy, async (contract: SmartContractI
             progress.report({
                 increment: 100
             })
-            vscode.window.showInformationMessage(`Contract successfully deployed!`)
+            outputChannel.show()
+            outputChannel.appendLine(`---------------------------------------`)
+            outputChannel.appendLine(`${contract.label} deployed.`)
+            outputChannel.appendLine(`- address: ${receipt.contractAddress}`)
+            outputChannel.appendLine(`- transaction hash: ${receipt.transactionHash}`)
+            outputChannel.appendLine(`---------------------------------------`)
+            outputChannel.appendLine('')
             return transactionHash
         })
     } catch (e) {
@@ -153,7 +159,23 @@ vscode.commands.registerCommand(Commands.SendTransaction, async (contract: Metho
     try {
         const transactionHash = await showSendTransactionInputBox(contract)
         if (transactionHash) {
-            await showTransactionResultOutput(transactionHash)
+            vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Sending transaction...',
+                cancellable: false
+            }, async (progress, token) => {
+                progress.report({
+                    increment: 0
+                })
+                outputChannel.show()
+                outputChannel.appendLine(`Transaction sent: ${transactionHash}`)
+                await waitForMined(transactionHash)
+                progress.report({
+                    increment: 100
+                })
+                outputChannel.appendLine(`... Transaction mined.`)
+                outputChannel.appendLine('')
+            })
         }
     } catch (e) {
         vscode.window.showInformationMessage(`${e.message}`)
@@ -183,11 +205,4 @@ async function showSendTransactionInputBox(contract: MethodItem): Promise<string
     } catch (error) {
         vscode.window.showErrorMessage(error)
     }
-}
-
-async function showTransactionResultOutput(transactionHash: string) {
-    outputChannel.show()
-    outputChannel.appendLine(`Transaction sent: ${transactionHash}`)
-    await waitForMined(transactionHash)
-    outputChannel.appendLine(`... Transaction mined.`)
 }
