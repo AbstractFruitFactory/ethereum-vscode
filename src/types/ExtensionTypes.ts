@@ -10,5 +10,6 @@ export const Commands = {
     Deploy: `${Views.SmartContracts}.deploy`,
     DecodeLog: `${Views.Tools}.decodeLog`,
     SendTransaction: `${Views.SmartContracts}.sendTransaction`,
-    GetTransactionReceipt: `${Views.Tools}.getTransactionReceipt`
+    GetTransactionReceipt: `${Views.Tools}.getTransactionReceipt`,
+    CopyContractData: `${Views.SmartContracts}.copyContractData`
 }

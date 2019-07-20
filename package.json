@@ -67,6 +67,14 @@
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
 				}
+			},
+			{
+				"command": "smart-contracts.copyContractData",
+				"title": "Copy",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
 			}
 		],
 		"menus": {
@@ -86,6 +94,11 @@
 				{
 					"command": "smart-contracts.sendTransaction",
 					"when": "view == smart-contracts && viewItem == method",
+					"group": "inline"
+				},
+				{
+					"command": "smart-contracts.copyContractData",
+					"when": "view == smart-contracts && viewItem == contractData",
 					"group": "inline"
 				}
 			]
@@ -107,6 +120,7 @@
 	},
 	"dependencies": {
 		"@types/web3": "^1.0.19",
+		"clipboardy": "^2.1.0",
 		"ethers": "^4.0.33",
 		"solc": "^0.5.9",
 		"web3": "^1.0.0-beta.46",

@@ -4,6 +4,7 @@ import { CompiledContract } from '../types/CompiledContract'
 import { Views, Commands } from "../types/ExtensionTypes"
 import { Parameter } from "../types/ABITypes"
 import { outputChannel } from '../extension'
+const clipboardy = require('clipboardy')
 
 export class SmartContractsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     public contractFiles: string[] = []
@@ -180,6 +181,17 @@ vscode.commands.registerCommand(Commands.SendTransaction, async (contract: Metho
     } catch (e) {
         vscode.window.showInformationMessage(`${e.message}`)
     }
+})
+
+vscode.commands.registerCommand(Commands.CopyContractData, (contract: ContractDataItem) => {
+    let data: string
+    if(contract.label === 'ABI') {
+        data = JSON.stringify(contract.data)
+    } else {
+        data = contract.data
+    }
+    clipboardy.writeSync(data)
+    vscode.window.showInformationMessage(`${contract.label} copied!`)
 })
 
 async function showSendTransactionInputBox(contract: MethodItem): Promise<string | undefined> {
