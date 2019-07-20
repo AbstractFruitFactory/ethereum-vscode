@@ -2,7 +2,9 @@ import * as vscode from 'vscode'
 import { getCompiledFiles, deployContract, getFunctionData, sendTransaction, getTransactionReceiptMined } from "../utils/Web3Utils"
 import { CompiledContract } from '../types/CompiledContract'
 import { Views, Commands } from "../types/ExtensionTypes"
-import { Parameter } from "../types/ABITypes";
+import { Parameter } from "../types/ABITypes"
+import { outputChannel } from '../extension'
+import { TransactionReceipt } from 'web3-core';
 
 export class SmartContractsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     public contractFiles: string[] = []
@@ -131,12 +133,12 @@ vscode.commands.registerCommand(Commands.Deploy, async (contract: SmartContractI
             const transactionHash: string = await deployContract(contract.contractData)
             let receipt = await getTransactionReceiptMined(transactionHash)
             contract.deployedAddress = receipt.contractAddress as string
-                    refreshContractsView(contract)
-                    progress.report({
-                        increment: 100
-                    })
+            refreshContractsView(contract)
+            progress.report({
+                increment: 100
+            })
             return transactionHash
-                })
+        })
     } catch (e) {
         vscode.window.showInformationMessage(`Failed to deploy contract. ${e.message}!`)
     }
@@ -145,13 +147,16 @@ vscode.commands.registerCommand(Commands.Deploy, async (contract: SmartContractI
 
 vscode.commands.registerCommand(Commands.SendTransaction, async (contract: MethodItem) => {
     try {
-        await showTransactionInput(contract)
+        const transactionHash = await showSendTransactionInputBox(contract)
+        if (transactionHash) {
+            await showTransactionResultOutput(transactionHash)
+        }
     } catch (e) {
         vscode.window.showInformationMessage(`${e.message}`)
     }
 })
 
-async function showTransactionInput(contract: MethodItem) {
+async function showSendTransactionInputBox(contract: MethodItem): Promise<string | undefined> {
     let placeHolder = ''
     for (let param of contract.params) {
         placeHolder += `${param.type}, `
@@ -163,14 +168,22 @@ async function showTransactionInput(contract: MethodItem) {
     })
 
     if (!input) {
-        return
+        return undefined
     }
 
     let inputArray: string[] = input.split(',')
 
     try {
-        await sendTransaction(contract.parent.parent.contractData, contract.parent.parent.deployedAddress, contract.label, inputArray)
+        let transactionHash = await sendTransaction(contract.parent.parent.contractData, contract.parent.parent.deployedAddress, contract.label, inputArray)
+        return transactionHash
     } catch (error) {
         vscode.window.showErrorMessage(error)
     }
+}
+
+async function showTransactionResultOutput(transactionHash: string) {
+    outputChannel.show()
+    outputChannel.appendLine(`Transaction sent: ${transactionHash}`)
+    await getTransactionReceiptMined(transactionHash)
+    outputChannel.appendLine(`... Transaction mined.`)
 }

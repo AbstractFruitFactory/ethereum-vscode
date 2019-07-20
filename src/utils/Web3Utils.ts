@@ -87,7 +87,7 @@ export function decodeEvent(event: Event, data: string) {
     return web3.eth.abi.decodeLog(event.inputs, data, [eventTopic])
 }
 
-export async function sendTransaction(contractData: CompiledContract, contractAddress: string, functionName: string, args: any[] = []) {
+export async function sendTransaction(contractData: CompiledContract, contractAddress: string, functionName: string, args: any[] = []): Promise<string> {
     var contract = new web3.eth.Contract(contractData.abi, contractAddress, {
         data: contractData.bytecode,
         from: accounts[0],
@@ -95,7 +95,15 @@ export async function sendTransaction(contractData: CompiledContract, contractAd
         gas: 100000
     })
 
-    await contract.methods[functionName](...args).send({ from: accounts[0] })
+    return new Promise((resolve, reject) => {
+        contract.methods[functionName](...args).send({ from: accounts[0] })
+            .on('error', (error: Error) => {
+                reject(error.message)
+            })
+            .on('transactionHash', (transactionHash: string) => {
+                resolve(transactionHash)
+            })
+    })
 }
 
 
