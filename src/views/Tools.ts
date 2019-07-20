@@ -110,3 +110,20 @@ vscode.commands.registerCommand(Commands.DecodeLog, async () => {
 
 	*/
 })
+
+vscode.commands.registerCommand(Commands.InputRPCEndpoint, () => {
+	vscode.window.showInputBox({
+		value: 'http://127.0.0.1:8545',
+		placeHolder: 'Enter blockchain url...'
+	}).then(async blockchain_address => {
+		if (blockchain_address) {
+			try {
+				await connectToBlockchain(blockchain_address)
+				vscode.window.showInformationMessage(`Connected to blockchain on ${blockchain_address}!`)
+			} catch (e) {
+				vscode.window.showInformationMessage(`Failed to connect. ${e.message}`)
+			}
+		}
+	})
+})
+
