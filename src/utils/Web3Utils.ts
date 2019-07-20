@@ -32,15 +32,17 @@ export function compileSolidity(filePath: string): CompiledContract[] | undefine
     }
 }
 
-export function deployContract(contract: CompiledContract, callback: any) {
+export async function deployContract(contract: CompiledContract): Promise<string> {
     const contractInstance = new web3.eth.Contract(contract.abi)
+    return new Promise((resolve, reject) => {
     contractInstance.deploy({ data: contract.bytecode, arguments: [] }).send({ from: accounts[0], gas: 1000000 })
         .on('error', (error: Error) => {
-            console.log(error)
+                reject(error)
         })
         .on('transactionHash', (transactionHash: string) => {
-            callback(transactionHash)
+                resolve(transactionHash)
         })
+    })
 }
 
 export async function connectToBlockchain(blockchain_address: string) {

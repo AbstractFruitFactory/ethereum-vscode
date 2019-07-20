@@ -127,18 +127,16 @@ vscode.commands.registerCommand(Commands.Deploy, async (contract: SmartContractI
             progress.report({
                 increment: 0
             })
-            return await new Promise((resolve, reject) => {
-                deployContract(contract.contractData, async (transactionHash: string) => {
-                    let receipt: any = await getTransactionReceiptMined(transactionHash)
-                    contract.deployedAddress = receipt.contractAddress
+
+            const transactionHash: string = await deployContract(contract.contractData)
+            let receipt = await getTransactionReceiptMined(transactionHash)
+            contract.deployedAddress = receipt.contractAddress as string
                     refreshContractsView(contract)
                     progress.report({
                         increment: 100
                     })
-                    resolve()
+            return transactionHash
                 })
-            })
-        })
     } catch (e) {
         vscode.window.showInformationMessage(`Failed to deploy contract. ${e.message}!`)
     }
