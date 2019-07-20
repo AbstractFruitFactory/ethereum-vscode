@@ -93,24 +93,6 @@ vscode.commands.registerCommand(Commands.DecodeLog, async () => {
 
 	const decodedEvent = decodeEvent(event, eventData)
 	console.log(decodedEvent)
-
-	/*
-
-	const options: { [key: string]: (context: vscode.ExtensionContext) => Promise<void> } = {
-		showContractEvents
-	};
-	const quickPick = vscode.window.createQuickPick();
-	quickPick.items = Object.keys(options).map(label => ({ label }));
-	quickPick.onDidChangeSelection(selection => {
-		if (selection[0]) {
-			options[selection[0].label](context)
-				.catch(console.error);
-		}
-	});
-	quickPick.onDidHide(() => quickPick.dispose());
-	quickPick.show();
-
-	*/
 })
 
 vscode.commands.registerCommand(Commands.InputRPCEndpoint, () => {
@@ -122,8 +104,8 @@ vscode.commands.registerCommand(Commands.InputRPCEndpoint, () => {
 			try {
 				await connectToBlockchain(blockchain_address)
 				vscode.window.showInformationMessage(`Connected to blockchain on ${blockchain_address}!`)
-			} catch (e) {
-				vscode.window.showInformationMessage(`Failed to connect. ${e.message}`)
+			} catch (error) {
+				vscode.window.showInformationMessage(`Failed to connect. ${error.message}`)
 			}
 		}
 	})
@@ -137,7 +119,8 @@ vscode.commands.registerCommand(Commands.GetTransactionReceipt, () => {
 			try {
 				const receipt = await getTransactionReceipt(transactionHash)
 				outputChannel.show()
-				outputChannel.appendLine(`${receipt}`)
+				outputChannel.appendLine(JSON.stringify(receipt, null, 2))
+				outputChannel.appendLine('')
 			} catch (error) {
 				vscode.window.showErrorMessage(error.message)
 			}
