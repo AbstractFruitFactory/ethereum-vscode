@@ -60,6 +60,15 @@
 					"dark": "media/dep.svg"
 				}
 			},
+			{
+				"command": "solidity-files.openSolidityFile",
+				"title": "Open file",
+				"icon": {
+					"light": "media/dep.svg",
+					"dark": "media/dep.svg"
+				}
+			},
+			{
 				"command": "smart-contracts.deploy",
 				"title": "Deploy",
 				"icon": {
@@ -90,6 +99,11 @@
 					"command": "solidity-files.compileAll",
 					"when": "view == solidity-files",
 					"group": "navigation"
+				},
+				{
+					"command": "solidity-files.openSolidityFile",
+					"when": "view == solidity-files",
+					"group": "inline"
 				}
 			],
 			"view/item/context": [

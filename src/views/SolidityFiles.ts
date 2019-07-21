@@ -5,10 +5,19 @@ import { Commands, Views } from "../types/ExtensionTypes";
 var fs = require('fs')
 var path = require('path')
 
+const openedFilePaths: string[] = []
+
 export class SolidityFilesProvider implements vscode.TreeDataProvider<SolidityFile> {
 	public contractFiles: string[] = []
 
+	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
+	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event
+
 	constructor() {
+	}
+
+	public refresh(element?: vscode.TreeItem): any {
+		this._onDidChangeTreeData.fire(element);
 	}
 
 	getTreeItem(element: SolidityFile): vscode.TreeItem {
@@ -20,9 +29,12 @@ export class SolidityFilesProvider implements vscode.TreeDataProvider<SolidityFi
 		this.contractFiles = files
 		let contractItems: SolidityFile[] = []
 		files.forEach(file => {
-			contractItems.push(new SolidityFile(path.basename(file), file, vscode.TreeItemCollapsibleState.None))
+			contractItems.push(new SolidityFile(path.basename(file), file, vscode.TreeItemCollapsibleState.None, {
+				command: Commands.OpenFileView,
+				title: '',
+				arguments: [file]
+			}))
 		})
-
 		return contractItems
 	}
 }
@@ -40,7 +52,13 @@ export class SolidityFile extends vscode.TreeItem {
 	}
 }
 
+async function openFile(file: vscode.Uri) {
+	await vscode.window.showTextDocument(file);
+}
 
+export function refreshFileView(element?: vscode.TreeItem) {
+	treeDataProvider.refresh(element)
+}
 
 function findAllSolidityFiles(): string[] {
 	const rootPath = vscode.workspace.rootPath
@@ -48,6 +66,7 @@ function findAllSolidityFiles(): string[] {
 	if (rootPath) {
 		files = searchFiles(rootPath, /\.*.sol/)
 	}
+	files = files.concat(openedFilePaths)
 	return files
 }
 
@@ -77,6 +96,33 @@ vscode.commands.registerCommand(Commands.CompileAll, () => {
 	}
 	refreshContractsView()
 })
+
+vscode.commands.registerCommand(Commands.OpenSolidityFile, async () => {
+	const filePaths: vscode.Uri[] | undefined = await vscode.window.showOpenDialog({
+		canSelectFiles: true,
+		canSelectMany: true,
+		filters: {
+			Solidity: ['sol']
+		},
+
+	})
+	if (!filePaths) return
+
+	for (let path of filePaths) {
+		openedFilePaths.push(path.fsPath)
+	}
+
+	refreshFileView()
+})
+
+vscode.commands.registerCommand(Commands.OpenFileView, async (filePath: string) => {
+	try {
+		await openFile(vscode.Uri.file(filePath))
+	} catch (error) {
+		vscode.window.showErrorMessage(error.message)
+	}
+})
+
 vscode.commands.registerCommand(Commands.Compile, (file: SolidityFile) => {
 	compileSolidity(file.path)
 	refreshContractsView()
