@@ -34,7 +34,7 @@ export function compileSolidity(filePath: string): CompiledContract[] | undefine
 }
 
 export async function deployContract(contract: CompiledContract): Promise<string> {
-    if(!await isConnected()) {
+    if (!await isConnected()) {
         throw new Error('Not connected to blockchain.')
     }
     const contractInstance = new web3.eth.Contract(contract.abi)
@@ -110,7 +110,6 @@ export async function sendTransaction(contractData: CompiledContract, contractAd
     })
 }
 
-
 export function waitForMined(transactionHash: string, interval: number = 300): Promise<TransactionReceipt> {
     const transactionReceiptAsync = function (resolve: any, reject: any) {
         web3.eth.getTransactionReceipt(transactionHash, (error: Error, receipt) => {
@@ -143,6 +142,28 @@ export async function isConnected(): Promise<boolean> {
 
 export function encodeFunctionSignature(signature: string): string {
     return Web3EthAbi.encodeFunctionSignature(signature)
+}
+
+export function encodeEventSignature(signature: string): string {
+    return Web3EthAbi.encodeEventSignature(signature)
+}
+
+export function encodeParameter(type: string, value: string) {
+    let val
+    try {
+        val = JSON.parse(value)
+    } catch (error) {
+        try {
+            return Web3EthAbi.encodeParameter(type, value)
+        } catch (error) {
+            throw error
+        }
+    }
+    try {
+        return Web3EthAbi.encodeParameter(type, val)
+    } catch (error) {
+        throw error
+    }
 }
 
 function generateSolidityCompilerInput(filename: string, filecontent: string) {
