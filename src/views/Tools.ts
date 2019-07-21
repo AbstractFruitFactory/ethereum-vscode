@@ -1,14 +1,20 @@
 import * as vscode from 'vscode'
-import { Commands } from "../types/ExtensionTypes"
+import { Commands, Views } from "../types/ExtensionTypes"
 import { CompiledContract } from '../types/CompiledContract';
 import { Event, Function } from '../types/ABITypes';
-import { getCompiledFiles, getEventData, decodeEvent, connectToBlockchain, getTransactionReceipt, getFunctionData, encodeFunctionSignature, encodeEventSignature, encodeParameter } from '../utils/Web3Utils'
+import { getCompiledFiles, getEventData, decodeEvent, connectToBlockchain, getTransactionReceipt, getFunctionData, encodeFunctionSignature, encodeEventSignature, encodeParameter, sendTransaction, isConnected } from '../utils/Web3Utils'
 import { outputChannel } from '../extension'
 
 export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
+    readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event
 
-	constructor() {
-	}
+    constructor() {
+    }
+
+    public refresh(element?: vscode.TreeItem): any {
+        this._onDidChangeTreeData.fire(element);
+    }
 
 	getTreeItem(element: Web3Item): vscode.TreeItem {
 		return element;
@@ -43,10 +49,16 @@ export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 				title: ''
 			}))
 			items.push(new Web3Item('abi', vscode.TreeItemCollapsibleState.Collapsed))
-			items.push(new Web3Item('getTransactionReceipt', vscode.TreeItemCollapsibleState.None, {
-				command: Commands.GetTransactionReceipt,
-				title: ''
-			}))
+			if (await isConnected()) {
+				items.push(new Web3Item('getTransactionReceipt', vscode.TreeItemCollapsibleState.None, {
+					command: Commands.GetTransactionReceipt,
+					title: ''
+				}))
+				items.push(new Web3Item('sendTransaction', vscode.TreeItemCollapsibleState.None, {
+					command: Commands.SendTransactionUsingABI,
+					title: ''
+				}))
+			}
 		}
 		return items
 	}
@@ -61,6 +73,15 @@ class Web3Item extends vscode.TreeItem {
 		super(label, collapsibleState);
 	}
 }
+
+export function refreshToolsView(element?: vscode.TreeItem) {
+    treeDataProvider.refresh(element)
+}
+
+let toolsTreeView: vscode.TreeView<vscode.TreeItem>
+
+const treeDataProvider = new ToolsProvider();
+toolsTreeView = vscode.window.createTreeView(Views.Tools, { treeDataProvider });
 
 
 vscode.commands.registerCommand(Commands.DecodeLog, async () => {
@@ -98,6 +119,7 @@ vscode.commands.registerCommand(Commands.InputRPCEndpoint, () => {
 		if (blockchain_address) {
 			try {
 				await connectToBlockchain(blockchain_address)
+				refreshToolsView()
 				vscode.window.showInformationMessage(`Connected to blockchain on ${blockchain_address}!`)
 			} catch (error) {
 				vscode.window.showInformationMessage(`Failed to connect. ${error.message}`)
@@ -202,6 +224,67 @@ vscode.commands.registerCommand(Commands.EncodeParameter, async () => {
 	outputChannel.show()
 	outputChannel.appendLine(`encodeParameter: (${type}, ${value}) => ${encoded}`)
 	outputChannel.appendLine('')
+})
+
+vscode.commands.registerCommand(Commands.SendTransactionUsingABI, async () => {
+	let abi = await vscode.window.showInputBox({
+		placeHolder: 'Enter ABI...'
+	})
+	if (!abi) return
+
+	let abiParsed: any[]
+	try {
+		abiParsed = JSON.parse(abi)
+	} catch (error) {
+		vscode.window.showErrorMessage(`Invalid ABI. ${error.message}`)
+		throw error
+	}
+
+	const bytecode: string | undefined = await vscode.window.showInputBox({
+		placeHolder: 'Enter bytecode...'
+	})
+	if (!bytecode) return
+
+	const address: string | undefined = await vscode.window.showInputBox({
+		placeHolder: 'Enter contract address...'
+	})
+	if (!address) return
+
+	const functions: Function[] = getFunctionData(abiParsed)
+	let functionNames: { [key: string]: Function } = {}
+	for (let func of functions) {
+		functionNames[func.name] = func
+	}
+
+	const functionName: string | undefined = await vscode.window.showQuickPick(Object.keys(functionNames), {
+		placeHolder: 'Select function...'
+	})
+	if (!functionName) return
+
+	if (functionNames[functionName].inputs[0]) {
+		let placeHolder = ''
+		for (let param of functionNames[functionName].inputs) {
+			placeHolder += `${param.type}, `
+		}
+		placeHolder = placeHolder.slice(0, -2)
+		const inputs: string | undefined = await vscode.window.showInputBox({
+			placeHolder
+		})
+		if (!inputs) return
+
+		let inputArray: string[] = inputs.split(',')
+		try {
+			await sendTransaction(abiParsed, bytecode, address, functionName, inputArray)
+		} catch (error) {
+			vscode.window.showErrorMessage(error.message)
+		}
+	} else {
+		try {
+			await sendTransaction(abiParsed, bytecode, address, functionName)
+		} catch (error) {
+			vscode.window.showErrorMessage(error.message)
+		}
+	}
 })
 
 async function showSmartContractPicker() {

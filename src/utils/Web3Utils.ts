@@ -91,9 +91,9 @@ export function decodeEvent(event: Event, data: string) {
     return Web3EthAbi.decodeLog(event.inputs, data, [eventTopic])
 }
 
-export async function sendTransaction(contractData: CompiledContract, contractAddress: string, functionName: string, args: any[] = []): Promise<string> {
-    var contract = new web3.eth.Contract(contractData.abi, contractAddress, {
-        data: contractData.bytecode,
+export async function sendTransaction(abi: any[], bytecode: string, contractAddress: string, functionName: string, args: any[] = []): Promise<string> {
+    var contract = new web3.eth.Contract(abi, contractAddress, {
+        data: bytecode,
         from: accounts[0],
         gasPrice: '10',
         gas: 100000

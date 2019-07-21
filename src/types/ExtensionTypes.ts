@@ -14,6 +14,9 @@ export const Commands = {
     CopyContractData: `${Views.SmartContracts}.copyContractData`,
     EncodeFunctionSignature: `${Views.Tools}.encodeFunctionSignature`,
     EncodeEventSignature: `${Views.Tools}.encodeEventSignature`,
+    EncodeParameter: `${Views.Tools}.encodeParameter`,
+    SendTransactionUsingABI: `${Views.Tools}.sendTransactionUsingABI`,
     OpenSolidityFile: `${Views.SolidityFiles}.openSolidityFile`,
+    OpenFileView: `${Views.SolidityFiles}.openFileView`,
     Compile: `${Views.SolidityFiles}.compile`
 }

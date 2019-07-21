@@ -105,10 +105,6 @@ export class ContractDataItem extends vscode.TreeItem {
     }
 }
 
-function openFile(file: vscode.Uri): void {
-    vscode.window.showTextDocument(file);
-}
-
 export function refreshContractsView(element?: vscode.TreeItem) {
     treeDataProvider.refresh(element)
 }
@@ -185,7 +181,7 @@ vscode.commands.registerCommand(Commands.SendTransaction, async (contract: Metho
 
 vscode.commands.registerCommand(Commands.CopyContractData, (contract: ContractDataItem) => {
     let data: string
-    if(contract.label === 'ABI') {
+    if (contract.label === 'ABI') {
         data = JSON.stringify(contract.data)
     } else {
         data = contract.data
@@ -195,26 +191,48 @@ vscode.commands.registerCommand(Commands.CopyContractData, (contract: ContractDa
 })
 
 async function showSendTransactionInputBox(contract: MethodItem): Promise<string | undefined> {
-    let placeHolder = ''
-    for (let param of contract.params) {
-        placeHolder += `${param.type}, `
-    }
-    placeHolder = placeHolder.slice(0, -2)
+    if (!contract.params[0]) {
+        try {
+            let transactionHash = await sendTransaction(
+                contract.parent.parent.contractData.abi,
+                contract.parent.parent.contractData.bytecode,
+                contract.parent.parent.deployedAddress,
+                contract.label
+            )
+            return transactionHash
+        } catch (error) {
+            vscode.window.showErrorMessage(error)
+            throw error
+        }
+    } else {
+        let placeHolder = ''
+        for (let param of contract.params) {
+            placeHolder += `${param.type}, `
+        }
+        placeHolder = placeHolder.slice(0, -2)
 
-    const input: string | undefined = await vscode.window.showInputBox({
-        placeHolder
-    })
+        const input: string | undefined = await vscode.window.showInputBox({
+            placeHolder
+        })
 
-    if (!input) {
-        return undefined
-    }
+        if (!input) {
+            return undefined
+        }
 
-    let inputArray: string[] = input.split(',')
+        let inputArray: string[] = input.split(',')
 
-    try {
-        let transactionHash = await sendTransaction(contract.parent.parent.contractData, contract.parent.parent.deployedAddress, contract.label, inputArray)
-        return transactionHash
-    } catch (error) {
-        vscode.window.showErrorMessage(error)
+        try {
+            let transactionHash = await sendTransaction(
+                contract.parent.parent.contractData.abi,
+                contract.parent.parent.contractData.bytecode,
+                contract.parent.parent.deployedAddress,
+                contract.label,
+                inputArray
+            )
+            return transactionHash
+        } catch (error) {
+            vscode.window.showErrorMessage(error)
+            throw error
+        }
     }
 }

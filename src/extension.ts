@@ -1,15 +1,13 @@
 'use strict'
-import * as vscode from 'vscode';
-import { ToolsProvider } from './views/Tools'
+import * as vscode from 'vscode'
 import "./views/SmartContracts"
 import "./views/SolidityFiles"
+import "./views/Tools"
 
 let outputChannel: vscode.OutputChannel
 
 export function activate(context: vscode.ExtensionContext) {
-	const toolsProvider = new ToolsProvider()
 	outputChannel = vscode.window.createOutputChannel('EthereumDevTools')
-	vscode.window.registerTreeDataProvider('tools', toolsProvider)
 }
 
 export { outputChannel }
