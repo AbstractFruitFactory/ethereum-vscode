@@ -53,6 +53,13 @@
 				}
 			},
 			{
+				"command": "solidity-files.compile",
+				"title": "Compile",
+				"icon": {
+					"light": "media/dep.svg",
+					"dark": "media/dep.svg"
+				}
+			},
 				"command": "smart-contracts.deploy",
 				"title": "Deploy",
 				"icon": {
@@ -99,6 +106,11 @@
 				{
 					"command": "smart-contracts.copyContractData",
 					"when": "view == smart-contracts && viewItem == contractData",
+					"group": "inline"
+				},
+				{
+					"command": "solidity-files.compile",
+					"when": "view == solidity-files && viewItem == file",
 					"group": "inline"
 				}
 			]

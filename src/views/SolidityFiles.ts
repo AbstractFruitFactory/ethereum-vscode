@@ -77,3 +77,7 @@ vscode.commands.registerCommand(Commands.CompileAll, () => {
 	}
 	refreshContractsView()
 })
+vscode.commands.registerCommand(Commands.Compile, (file: SolidityFile) => {
+	compileSolidity(file.path)
+	refreshContractsView()
+})
