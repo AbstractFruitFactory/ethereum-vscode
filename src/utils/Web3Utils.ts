@@ -2,11 +2,11 @@ import { CompiledContract } from "../types/CompiledContract"
 import Web3 from "web3"
 import { Event, Function, types } from "../types/ABITypes"
 import { TransactionReceipt } from "web3-core";
-
 const Web3Class = require('web3')
 var path = require('path')
 var fs = require('fs')
 var solc = require('solc')
+var Web3EthAbi = require('web3-eth-abi');
 
 var web3: Web3
 let contractData: CompiledContract[] = []
@@ -88,7 +88,7 @@ export function getAbiData<T>(abi: any[], types: T[], type: string): T[] {
 
 export function decodeEvent(event: Event, data: string) {
     let eventTopic: string = web3.eth.abi.encodeEventSignature(event)
-    return web3.eth.abi.decodeLog(event.inputs, data, [eventTopic])
+    return Web3EthAbi.decodeLog(event.inputs, data, [eventTopic])
 }
 
 export async function sendTransaction(contractData: CompiledContract, contractAddress: string, functionName: string, args: any[] = []): Promise<string> {
@@ -139,6 +139,10 @@ export async function isConnected(): Promise<boolean> {
         return false
     }
     return true
+}
+
+export function encodeFunctionSignature(signature: string): string {
+    return Web3EthAbi.encodeFunctionSignature(signature)
 }
 
 function generateSolidityCompilerInput(filename: string, filecontent: string) {

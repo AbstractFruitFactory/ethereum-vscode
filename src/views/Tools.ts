@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
 import { Commands } from "../types/ExtensionTypes"
 import { CompiledContract } from '../types/CompiledContract';
-import { Event } from '../types/ABITypes';
-import { getCompiledFiles, getEventData, decodeEvent, connectToBlockchain, getTransactionReceipt } from '../utils/Web3Utils';
-import { outputChannel } from '../extension';
+import { Event, Function } from '../types/ABITypes';
+import { getCompiledFiles, getEventData, decodeEvent, connectToBlockchain, getTransactionReceipt, getFunctionData, encodeFunctionSignature } from '../utils/Web3Utils'
+import { outputChannel } from '../extension'
 
 export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 
@@ -22,6 +22,10 @@ export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 				case 'abi':
 					items.push(new Web3Item('decodeLog', vscode.TreeItemCollapsibleState.None, {
 						command: Commands.DecodeLog,
+						title: ''
+					}))
+					items.push(new Web3Item('encodeFunctionSignature', vscode.TreeItemCollapsibleState.None, {
+						command: Commands.EncodeFunctionSignature,
 						title: ''
 					}))
 			}
@@ -128,4 +132,50 @@ vscode.commands.registerCommand(Commands.GetTransactionReceipt, () => {
 			}
 		}
 	})
+})
+
+vscode.commands.registerCommand(Commands.EncodeFunctionSignature, async () => {
+	const compiledContracts: CompiledContract[] = getCompiledFiles()
+	const compiledContractsNames: { [key: string]: CompiledContract } = {}
+	for (let contract of compiledContracts) {
+		compiledContractsNames[contract.name] = contract
+	}
+	const contractName: string | undefined = await vscode.window.showQuickPick(Object.keys(compiledContractsNames), {
+		placeHolder: 'Choose a smart contract...'
+	})
+
+	if (!contractName) return
+
+	let contract: CompiledContract = compiledContractsNames[contractName]
+
+	const functions = getFunctionData(contract.abi)
+
+	let functionNames: { [key: string]: Function } = {}
+	for (let func of functions) {
+		functionNames[func.name] = func
+	}
+
+	const functionName: string | undefined = await vscode.window.showQuickPick(Object.keys(functionNames), {
+		placeHolder: 'Choose a function...'
+	})
+
+	if (!functionName) return
+
+	let functionData: Function = functionNames[functionName]
+	let functionSignature = `${functionData.name}(`
+	for (let input of functionData.inputs) {
+		functionSignature += `${input.type},`
+	}
+	functionSignature = functionSignature.slice(0, -1)
+	functionSignature += ')'
+	let encodedSignature
+	try {
+		encodedSignature = encodeFunctionSignature(functionSignature)
+	} catch (error) {
+		vscode.window.showErrorMessage(error.message)
+		throw error
+	}
+	outputChannel.show()
+	outputChannel.appendLine(`Encoded function signature: ${encodedSignature}`)
+	outputChannel.appendLine('')
 })
