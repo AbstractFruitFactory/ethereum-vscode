@@ -85,17 +85,14 @@ toolsTreeView = vscode.window.createTreeView(Views.Tools, { treeDataProvider });
 
 
 vscode.commands.registerCommand(Commands.DecodeLog, async () => {
-	const compiledContracts: CompiledContract[] = getCompiledFiles()
-	const compiledContractNames: { [key: string]: CompiledContract } = {}
-	for (let contract of compiledContracts) {
-		compiledContractNames[contract.name] = contract
-	}
-	const contractName: string | undefined = await vscode.window.showQuickPick(Object.keys(compiledContractNames), {
+	const compiledContracts = getCompiledFiles()
+	
+	const contractName: string | undefined = await vscode.window.showQuickPick(Object.keys(compiledContracts), {
 		placeHolder: 'Choose a smart contract...'
 	})
 	if (!contractName) return
 
-	const { chosenEventName, eventNames } = await showEventPicker(compiledContractNames[contractName])
+	const { chosenEventName, eventNames } = await showEventPicker(compiledContracts[contractName])
 	if (!chosenEventName) return
 
 	const eventData: string | undefined = await vscode.window.showInputBox({
@@ -146,11 +143,11 @@ vscode.commands.registerCommand(Commands.GetTransactionReceipt, () => {
 })
 
 vscode.commands.registerCommand(Commands.EncodeFunctionSignature, async () => {
-	const { contractName, compiledContractsNames } = await showSmartContractPicker()
+	const { contractName, compiledContracts } = await showSmartContractPicker()
 
 	if (!contractName) return
 
-	let contract: CompiledContract = compiledContractsNames[contractName]
+	let contract: CompiledContract = compiledContracts[contractName]
 
 	const { chosenFunctionName, functionNames } = await showFunctionPicker(contract)
 
@@ -176,10 +173,10 @@ vscode.commands.registerCommand(Commands.EncodeFunctionSignature, async () => {
 })
 
 vscode.commands.registerCommand(Commands.EncodeEventSignature, async () => {
-	const { contractName, compiledContractsNames } = await showSmartContractPicker()
+	const { contractName, compiledContracts } = await showSmartContractPicker()
 	if (!contractName) return
 
-	let contract: CompiledContract = compiledContractsNames[contractName]
+	let contract: CompiledContract = compiledContracts[contractName]
 
 	const { chosenEventName, eventNames } = await showEventPicker(contract)
 	if (!chosenEventName) return
@@ -288,15 +285,12 @@ vscode.commands.registerCommand(Commands.SendTransactionUsingABI, async () => {
 })
 
 async function showSmartContractPicker() {
-	const compiledContracts: CompiledContract[] = getCompiledFiles()
-	const compiledContractsNames: { [key: string]: CompiledContract } = {}
-	for (let contract of compiledContracts) {
-		compiledContractsNames[contract.name] = contract
-	}
-	const contractName: string | undefined = await vscode.window.showQuickPick(Object.keys(compiledContractsNames), {
+	const compiledContracts = getCompiledFiles()
+	
+	const contractName: string | undefined = await vscode.window.showQuickPick(Object.keys(compiledContracts), {
 		placeHolder: 'Choose a smart contract...'
 	})
-	return { contractName, compiledContractsNames }
+	return { contractName, compiledContracts }
 }
 
 async function showFunctionPicker(contract: CompiledContract) {

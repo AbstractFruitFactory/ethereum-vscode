@@ -45,8 +45,8 @@ export class SmartContractsProvider implements vscode.TreeDataProvider<vscode.Tr
         } else {
             const compiledFiles = getCompiledFiles()
 
-            for (let compiledFile of compiledFiles) {
-                items.push(new SmartContractItem(compiledFile.name, vscode.TreeItemCollapsibleState.Collapsed, compiledFile))
+            for (let compiledFile in compiledFiles) {
+                items.push(new SmartContractItem(compiledFile, vscode.TreeItemCollapsibleState.Collapsed, compiledFiles[compiledFile]))
             }
         }
 

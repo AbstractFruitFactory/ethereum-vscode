@@ -9,10 +9,10 @@ var solc = require('solc')
 var Web3EthAbi = require('web3-eth-abi');
 
 var web3: Web3
-let contractData: CompiledContract[] = []
+let contractData: { [key: string]: CompiledContract } = {}
 let accounts: string[]
 
-export function compileSolidity(filePath: string): CompiledContract[] | undefined {
+export function compileSolidity(filePath: string): { [key: string]: CompiledContract } | undefined {
     const filecontent: string = fs.readFileSync(filePath, 'utf8')
     const fileName: string = path.basename(filePath)
     const input = generateSolidityCompilerInput(path.basename(filePath), filecontent)
@@ -23,11 +23,11 @@ export function compileSolidity(filePath: string): CompiledContract[] | undefine
     } else {
         const contracts = output.contracts[fileName]
         for (let contractName in contracts) {
-            contractData.push({
+            contractData[contractName] = {
                 name: contractName,
                 abi: contracts[contractName].abi,
                 bytecode: contracts[contractName].evm.bytecode.object
-            })
+            }
         }
         return contractData
     }
@@ -63,7 +63,7 @@ export async function connectToBlockchain(blockchain_address: string) {
     web3.defaultAccount = accounts[0]
 }
 
-export function getCompiledFiles(): CompiledContract[] {
+export function getCompiledFiles(): { [key: string]: CompiledContract } {
     return contractData
 }
 
