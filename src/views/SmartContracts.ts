@@ -190,6 +190,24 @@ vscode.commands.registerCommand(Commands.CopyContractData, (contract: ContractDa
     vscode.window.showInformationMessage(`${contract.label} copied!`)
 })
 
+vscode.commands.registerCommand(Commands.GetAddress, (contract: SmartContractItem) => {
+    outputChannel.show()
+    outputChannel.appendLine(`${contract.label} deployed address: ${contract.deployedAddress}`)
+    outputChannel.appendLine('')
+})
+
+vscode.commands.registerCommand(Commands.SetAddress, async (contract: SmartContractItem) => {
+    const address: string | undefined = await vscode.window.showInputBox({
+        placeHolder: 'Enter address...'
+    })
+    if(!address) return
+
+    contract.deployedAddress = address
+    outputChannel.show()
+    outputChannel.appendLine(`${contract.label} address set to: ${contract.deployedAddress}`)
+    outputChannel.appendLine('')
+})
+
 async function showSendTransactionInputBox(contract: MethodItem): Promise<string | undefined> {
     if (!contract.params[0]) {
         try {
