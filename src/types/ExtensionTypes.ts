@@ -21,5 +21,6 @@ export const Commands = {
     Compile: `${Views.SolidityFiles}.compile`,
     GetAddress: `${Views.SmartContracts}.getAddress`,
     SetAddress: `${Views.SmartContracts}.setAddress`,
-    DecodeParameter: `${Views.Tools}.decodeParameter`
+    DecodeParameter: `${Views.Tools}.decodeParameter`,
+    Namehash: `${Views.Tools}.namehash`
 }

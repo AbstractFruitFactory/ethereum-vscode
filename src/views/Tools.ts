@@ -4,6 +4,7 @@ import { CompiledContract } from '../types/CompiledContract';
 import { Event, Function } from '../types/ABITypes';
 import { getCompiledFiles, getEventData, decodeEvent, connectToBlockchain, getTransactionReceipt, getFunctionData, encodeFunctionSignature, encodeEventSignature, encodeParameter, sendTransaction, isConnected, decodeParameter } from '../utils/Web3Utils'
 import { outputChannel } from '../extension'
+var namehash = require('eth-ens-namehash')
 
 export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
@@ -46,6 +47,13 @@ export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 						command: Commands.DecodeParameter,
 						title: ''
 					}))
+					break
+				case 'ENS':
+					items.push(new Web3Item('namehash', vscode.TreeItemCollapsibleState.None, {
+						command: Commands.Namehash,
+						title: ''
+					}))
+					break
 			}
 		} else {
 			items.push(new Web3Item('Connect', vscode.TreeItemCollapsibleState.None, {
@@ -53,6 +61,7 @@ export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 				title: ''
 			}))
 			items.push(new Web3Item('abi', vscode.TreeItemCollapsibleState.Collapsed))
+			items.push(new Web3Item('ENS', vscode.TreeItemCollapsibleState.Collapsed))
 			if (await isConnected()) {
 				items.push(new Web3Item('getTransactionReceipt', vscode.TreeItemCollapsibleState.None, {
 					command: Commands.GetTransactionReceipt,
@@ -309,6 +318,18 @@ vscode.commands.registerCommand(Commands.SendTransactionUsingABI, async () => {
 			vscode.window.showErrorMessage(error.message)
 		}
 	}
+})
+
+vscode.commands.registerCommand(Commands.Namehash, async () => {
+	const value: string | undefined = await vscode.window.showInputBox({
+		placeHolder: 'Input value'
+	})
+	if(!value) return
+
+	const nameHash = namehash.hash(value)
+	outputChannel.show()
+	outputChannel.appendLine(`namehash: ${value} => ${nameHash}`)
+	outputChannel.appendLine('')
 })
 
 async function showSmartContractPicker() {
