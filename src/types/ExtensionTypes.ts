@@ -18,5 +18,5 @@ export const Commands = {
     SendTransactionUsingABI: `${Views.Tools}.sendTransactionUsingABI`,
     OpenSolidityFile: `${Views.SolidityFiles}.openSolidityFile`,
     OpenFileView: `${Views.SolidityFiles}.openFileView`,
-    Compile: `${Views.SolidityFiles}.compile`
+    DecodeParameter: `${Views.Tools}.decodeParameter`
 }

@@ -166,6 +166,14 @@ export function encodeParameter(type: string, value: string) {
     }
 }
 
+export function decodeParameter(type: string, encodedParam: string) {
+    try {
+        return Web3EthAbi.decodeParameter(type, encodedParam)
+    } catch (error) {
+        throw error
+    }
+}
+
 function generateSolidityCompilerInput(filename: string, filecontent: string) {
     return {
         language: 'Solidity',

@@ -2,19 +2,19 @@ import * as vscode from 'vscode'
 import { Commands, Views } from "../types/ExtensionTypes"
 import { CompiledContract } from '../types/CompiledContract';
 import { Event, Function } from '../types/ABITypes';
-import { getCompiledFiles, getEventData, decodeEvent, connectToBlockchain, getTransactionReceipt, getFunctionData, encodeFunctionSignature, encodeEventSignature, encodeParameter, sendTransaction, isConnected } from '../utils/Web3Utils'
+import { getCompiledFiles, getEventData, decodeEvent, connectToBlockchain, getTransactionReceipt, getFunctionData, encodeFunctionSignature, encodeEventSignature, encodeParameter, sendTransaction, isConnected, decodeParameter } from '../utils/Web3Utils'
 import { outputChannel } from '../extension'
 
 export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
-    readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event
+	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
+	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event
 
-    constructor() {
-    }
+	constructor() {
+	}
 
-    public refresh(element?: vscode.TreeItem): any {
-        this._onDidChangeTreeData.fire(element);
-    }
+	public refresh(element?: vscode.TreeItem): any {
+		this._onDidChangeTreeData.fire(element);
+	}
 
 	getTreeItem(element: Web3Item): vscode.TreeItem {
 		return element;
@@ -40,6 +40,10 @@ export class ToolsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 					}))
 					items.push(new Web3Item('encodeParameter', vscode.TreeItemCollapsibleState.None, {
 						command: Commands.EncodeParameter,
+						title: ''
+					}))
+					items.push(new Web3Item('decodeParameter', vscode.TreeItemCollapsibleState.None, {
+						command: Commands.DecodeParameter,
 						title: ''
 					}))
 			}
@@ -75,7 +79,7 @@ class Web3Item extends vscode.TreeItem {
 }
 
 export function refreshToolsView(element?: vscode.TreeItem) {
-    treeDataProvider.refresh(element)
+	treeDataProvider.refresh(element)
 }
 
 let toolsTreeView: vscode.TreeView<vscode.TreeItem>
@@ -86,7 +90,7 @@ toolsTreeView = vscode.window.createTreeView(Views.Tools, { treeDataProvider });
 
 vscode.commands.registerCommand(Commands.DecodeLog, async () => {
 	const compiledContracts = getCompiledFiles()
-	
+
 	const contractName: string | undefined = await vscode.window.showQuickPick(Object.keys(compiledContracts), {
 		placeHolder: 'Choose a smart contract...'
 	})
@@ -223,6 +227,29 @@ vscode.commands.registerCommand(Commands.EncodeParameter, async () => {
 	outputChannel.appendLine('')
 })
 
+vscode.commands.registerCommand(Commands.DecodeParameter, async () => {
+	const type: string | undefined = await vscode.window.showInputBox({
+		placeHolder: 'Enter type (example: bytes32)'
+	})
+	if (!type) return
+	const encoded: string | undefined = await vscode.window.showInputBox({
+		placeHolder: 'Enter encoded hex value'
+	})
+	if (!encoded) return
+
+	let decoded: string
+	try {
+		decoded = decodeParameter(type, encoded)
+	} catch (error) {
+		vscode.window.showErrorMessage(error.message)
+		throw error
+	}
+
+	outputChannel.show()
+	outputChannel.appendLine(`decodeParameter: (${type}, ${encoded}) => ${decoded}`)
+	outputChannel.appendLine('')
+})
+
 vscode.commands.registerCommand(Commands.SendTransactionUsingABI, async () => {
 	let abi = await vscode.window.showInputBox({
 		placeHolder: 'Enter ABI...'
@@ -286,7 +313,7 @@ vscode.commands.registerCommand(Commands.SendTransactionUsingABI, async () => {
 
 async function showSmartContractPicker() {
 	const compiledContracts = getCompiledFiles()
-	
+
 	const contractName: string | undefined = await vscode.window.showQuickPick(Object.keys(compiledContracts), {
 		placeHolder: 'Choose a smart contract...'
 	})
